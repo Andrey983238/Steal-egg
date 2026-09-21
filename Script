@@ -1,0 +1,121 @@
+-- Загрузка библиотеки Rayfield для красивого интерфейса
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- Создание главного окна
+local Window = Rayfield:CreateWindow({
+   Name = "Steal An Egg | Script",
+   LoadingTitle = "Загрузка скрипта...",
+   LoadingSubtitle = "by Assistant",
+   ConfigurationSaving = { Enabled = false },
+   KeySystem = false,
+})
+
+-- ==========================================
+-- Вкладка 1: Авто-кража
+-- ==========================================
+local StealTab = Window:CreateTab("Авто-кража", 4483362458) -- Иконка
+StealTab:CreateSection("Выбор цели")
+
+-- Выпадающий список для выбора существа, у которого красть
+local TargetDropdown = StealTab:CreateDropdown({
+   Name = "У кого красть?",
+   Options = {"Все", "Горила", "Кит", "Титан", "Дракон"},
+   CurrentOption = {"Все"},
+   MultipleOptions = false,
+   Flag = "TargetSelect",
+   Callback = function(option)
+       print("Выбрана цель для кражи:", option)
+       -- Здесь логика: скрипт должен искать ближайшую цель выбранного типа
+   end,
+})
+
+-- Кнопка старта авто-кражи
+StealTab:CreateButton({
+   Name = "Старт / Стоп авто-кражи",
+   Callback = function()
+       print("Авто-кража переключена")
+       -- Здесь будет основной цикл авто-кражи
+   end,
+})
+
+-- ==========================================
+-- Вкладка 2: Античит и Движение
+-- ==========================================
+local MoveTab = Window:CreateTab("Античит / Движение", 4483362458)
+MoveTab:CreateSection("Физика")
+
+-- Слайдер для изменения скорости
+local SpeedSlider = MoveTab:CreateSlider({
+   Name = "Скорость ходьбы",
+   Range = {16, 200},
+   Increment = 1,
+   Suffix = " studs",
+   CurrentValue = 16,
+   Flag = "SpeedSlider",
+   Callback = function(Value)
+       local player = game.Players.LocalPlayer
+       if player.Character and player.Character:FindFirstChild("Humanoid") then
+           player.Character.Humanoid.WalkSpeed = Value
+       end
+   end,
+})
+
+-- Тумблер для «античита», который снимает одежду и т.п.
+MoveTab:CreateToggle({
+   Name = "Античит (Снять одежду / Noclip)",
+   CurrentValue = false,
+   Flag = "AntiCheatToggle",
+   Callback = function(Value)
+       if Value then
+           print("Античит активирован")
+           -- Логика: удаление аксессуаров и одежды с персонажа
+           local char = game.Players.LocalPlayer.Character
+           if char then
+               for _, v in ipairs(char:GetChildren()) do
+                   if v:IsA("Accessory") or v:IsA("Shirt") or v:IsA("Pants") then
+                       v:Destroy()
+                   end
+               end
+           end
+       else
+           print("Античит отключен")
+       end
+   end,
+})
+
+-- ==========================================
+-- Вкладка 3: Телепорт и ESP
+-- ==========================================
+local VisualTab = Window:CreateTab("ТП / ESP", 4483362458)
+VisualTab:CreateSection("Позиции")
+
+-- Кнопка телепорта на спавн
+VisualTab:CreateButton({
+   Name = "Телепорт на Спавн",
+   Callback = function()
+       print("Телепорт на спавн")
+       local char = game.Players.LocalPlayer.Character
+       if char and char:FindFirstChild("HumanoidRootPart") then
+           -- Пример: Телепорт в координаты 0, 10, 0 (нужно заменить на реальные координаты спавна)
+           char.HumanoidRootPart.CFrame = CFrame.new(0, 10, 0)
+       end
+   end,
+})
+
+VisualTab:CreateSection("ESP Яиц")
+
+-- Тумблер для включения ESP
+VisualTab:CreateToggle({
+   Name = "Подсветка яиц (ESP)",
+   CurrentValue = false,
+   Flag = "EggESP",
+   Callback = function(Value)
+       if Value then
+           print("ESP яиц включен")
+           -- Логика: поиск всех объектов яиц в Workspace и добавление им Highlight
+       else
+           print("ESP яиц выключен")
+           -- Логика: удаление Highlight со всех яиц
+       end
+   end,
+})
