@@ -1,233 +1,66 @@
--- Steal An Egg | Script for Xeno/Delta/Volt (Keyless)
--- Загрузка UI
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-
-local Window = Rayfield:CreateWindow({
-   Name = "Steal An Egg | Working Script",
-   LoadingTitle = "Загрузка...",
-   LoadingSubtitle = "Fixed for real game",
-   ConfigurationSaving = { Enabled = false },
-   KeySystem = false,
-})
+-- Steal An Egg | Разведочный скрипт
+-- Запусти в игре и посмотри Output (F9)
 
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
--- Хранилище настроек
-getgenv().Config = {
-    SpeedEnabled = false,
-    SpeedValue = 16,
-    ESPEnabled = false,
-    AutoStealEnabled = false,
-    TargetBiome = "Все",
-}
+print("=== РАЗВЕДКА STEAL AN EGG ===")
 
--- ==========================================
--- 1. ЦИКЛ УДЕРЖАНИЯ СКОРОСТИ (обход простого сброса)
--- ==========================================
-task.spawn(function()
-    while task.wait(0.05) do
-        if getgenv().Config.SpeedEnabled then
-            local char = LocalPlayer.Character
-            if char and char:FindFirstChild("Humanoid") then
-                char.Humanoid.WalkSpeed = getgenv().Config.SpeedValue
-            end
+-- 1. Поиск RemoteEvent, связанных с яйцами или кражей
+print("\n[RemoteEvents / RemoteFunctions]")
+for _, v in ipairs(game:GetDescendants()) do
+    if v:IsA("RemoteEvent") or v:IsA("RemoteFunction") then
+        local name = v.Name:lower()
+        if name:find("egg") or name:find("steal") or name:find("speed") or name:find("treadmill") then
+            print("  -", v:GetFullName(), "| Тип:", v.ClassName)
         end
     end
-end)
+end
 
--- ==========================================
--- Вкладка 1: Скорость и Античит
--- ==========================================
-local MoveTab = Window:CreateTab("Скорость / Античит", 4483362458)
-MoveTab:CreateSection("Параметры движения")
+-- 2. Поиск объектов с "Egg" в названии
+print("\n[Объекты с 'Egg' в названии]")
+local eggCount = 0
+for _, v in ipairs(workspace:GetDescendants()) do
+    if v.Name:lower():find("egg") and eggCount < 20 then
+        print("  -", v:GetFullName(), "| Класс:", v.ClassName, "| Родитель:", v.Parent and v.Parent.Name)
+        eggCount = eggCount + 1
+    end
+end
+if eggCount == 0 then print("  (не найдено — возможно, яйца создаются динамически)") end
 
--- Слайдер скорости: значения подобраны под реальные требования игры [citation:2]
-MoveTab:CreateSlider({
-   Name = "Скорость ходьбы",
-   Range = {16, 8500000000}, -- от стандарта до требований Cherry Blossom/Titan
-   Increment = 1,
-   Suffix = " studs",
-   CurrentValue = 16,
-   Flag = "SpeedSlider",
-   Callback = function(Value)
-       getgenv().Config.SpeedValue = Value
-   end,
-})
+-- 3. Поиск объектов, связанных со скоростью
+print("\n[Объекты со 'Speed' в названии]")
+for _, v in ipairs(game:GetDescendants()) do
+    if v.Name:lower():find("speed") then
+        print("  -", v:GetFullName(), "| Класс:", v.ClassName)
+    end
+end
 
-MoveTab:CreateToggle({
-   Name = "Включить удержание скорости",
-   CurrentValue = false,
-   Flag = "SpeedToggle",
-   Callback = function(Value)
-       getgenv().Config.SpeedEnabled = Value
-   end,
-})
+-- 4. Проверка атрибутов персонажа (там может быть "Скорость")
+print("\n[Атрибуты Humanoid]")
+local char = LocalPlayer.Character
+if char and char:FindFirstChild("Humanoid") then
+    for attrName, attrValue in pairs(char.Humanoid:GetAttributes()) do
+        print("  -", attrName, "=", attrValue)
+    end
+end
 
-MoveTab:CreateButton({
-   Name = "Снять всю одежду",
-   Callback = function()
-       local char = LocalPlayer.Character
-       if char then
-           for _, v in ipairs(char:GetChildren()) do
-               if v:IsA("Accessory") or v:IsA("Shirt") or v:IsA("Pants") or v:IsA("CharacterMesh") then
-                   v:Destroy()
-               end
-           end
-           print("Одежда снята")
-       end
-   end,
-})
+-- 5. Атрибуты игрока (скорость часто хранится здесь)
+print("\n[Атрибуты LocalPlayer]")
+for attrName, attrValue in pairs(LocalPlayer:GetAttributes()) do
+    print("  -", attrName, "=", attrValue)
+end
 
--- ==========================================
--- Вкладка 2: Авто-кража (с реальными зонами)
--- ==========================================
-local StealTab = Window:CreateTab("Авто-кража", 4483362458)
-StealTab:CreateSection("Настройки кражи")
+-- 6. Атрибуты лидерстата (там может быть "Speed")
+print("\n[Leaderstats]")
+local ls = LocalPlayer:FindFirstChild("leaderstats")
+if ls then
+    for _, v in ipairs(ls:GetChildren()) do
+        print("  -", v.Name, "=", v.Value)
+    end
+else
+    print("  (leaderstats не найден)")
+end
 
--- Выбор зоны (биома) — названия из реальной игры [citation:2][citation:11]
-local BiomeDropdown = StealTab:CreateDropdown({
-   Name = "Биом для кражи",
-   Options = {"Все", "Forest", "Lake", "Desert", "Jungle", "Snow", "Volcano", "Abyss Ocean", "Prehistoric", "Cosmic", "Cherry Blossom", "Titan Temple"},
-   CurrentOption = {"Все"},
-   MultipleOptions = false,
-   Flag = "BiomeSelect",
-   Callback = function(option)
-       getgenv().Config.TargetBiome = option[1]
-       print("Выбран биом:", getgenv().Config.TargetBiome)
-   end,
-})
-
--- Старт авто-кражи
-StealTab:CreateToggle({
-   Name = "Авто-кража (вкл/выкл)",
-   CurrentValue = false,
-   Flag = "AutoStealToggle",
-   Callback = function(Value)
-       getgenv().Config.AutoStealEnabled = Value
-       if Value then
-           print("Авто-кража запущена. Цель:", getgenv().Config.TargetBiome)
-           task.spawn(function()
-               while getgenv().Config.AutoStealEnabled do
-                   local char = LocalPlayer.Character
-                   if char and char:FindFirstChild("HumanoidRootPart") then
-                       -- Поиск яиц в Workspace (объекты обычно содержат "Egg" в названии)
-                       local bestEgg = nil
-                       for _, obj in ipairs(workspace:GetDescendants()) do
-                           if obj:IsA("Model") and (obj.Name:lower():find("egg") or obj.Name:lower():find("nest")) then
-                               -- Фильтр по биому (упрощённо: проверяем позицию или родителя)
-                               -- В идеале нужно найти реальные папки биомов в Workspace
-                               if getgenv().Config.TargetBiome == "Все" or obj.Parent.Name:find(getgenv().Config.TargetBiome) then
-                                   bestEgg = obj
-                                   break
-                               end
-                           end
-                       end
-                       
-                       if bestEgg then
-                           -- Телепорт к яйцу
-                           local hrp = char.HumanoidRootPart
-                           hrp.CFrame = bestEgg:GetPivot() + Vector3.new(0, 3, 0)
-                           task.wait(0.3)
-                           
-                           -- Попытка взаимодействия (кражи)
-                           -- В игре часто используется ProximityPrompt или нажатие E
-                           local prompt = bestEgg:FindFirstChildWhichIsA("ProximityPrompt", true)
-                           if prompt then
-                               fireproximityprompt(prompt)
-                               print("Кража выполнена")
-                           end
-                           task.wait(0.5)
-                           
-                           -- Возврат на базу (примерные координаты, нужно уточнить в игре)
-                           -- Можно использовать кнопку "ТП на Спавн" ниже
-                       end
-                   end
-                   task.wait(1)
-               end
-           end)
-       else
-           print("Авто-кража остановлена")
-       end
-   end,
-})
-
--- ==========================================
--- Вкладка 3: ТП и ESP
--- ==========================================
-local VisualTab = Window:CreateTab("ТП / ESP", 4483362458)
-VisualTab:CreateSection("Телепорты")
-
--- Список зон для быстрого ТП (на основе реальных биомов) [citation:2]
-local TeleportDropdown = VisualTab:CreateDropdown({
-   Name = "Куда телепортироваться",
-   Options = {"Base (Спавн)", "Forest", "Lake", "Desert", "Jungle", "Snow", "Volcano", "Abyss Ocean", "Prehistoric", "Cosmic", "Cherry Blossom", "Titan Temple"},
-   CurrentOption = {"Base (Спавн)"},
-   MultipleOptions = false,
-   Flag = "TeleportTarget",
-   Callback = function(option) end,
-})
-
-VisualTab:CreateButton({
-   Name = "Телепорт",
-   Callback = function()
-       local char = LocalPlayer.Character
-       if char and char:FindFirstChild("HumanoidRootPart") then
-           -- Для Базы: используем респавн или поиск SpawnLocation
-           local target = VisualTab.Flags.TeleportTarget.Value
-           if target == "Base (Спавн)" then
-               -- Попытка найти спавн в Workspace
-               local spawnPart = workspace:FindFirstChild("SpawnLocation") or workspace:FindFirstChild("Spawn") or workspace:FindFirstChild("Base")
-               if spawnPart and spawnPart:IsA("BasePart") then
-                   char.HumanoidRootPart.CFrame = spawnPart.CFrame + Vector3.new(0, 5, 0)
-               else
-                   LocalPlayer:LoadCharacter() -- Принудительный респавн
-               end
-           else
-               -- Для других зон: ищем папку с названием биома или ближайшее яйцо в этой зоне
-               local biomeFolder = workspace:FindFirstChild(target)
-               if biomeFolder and biomeFolder:IsA("BasePart") then
-                   char.HumanoidRootPart.CFrame = biomeFolder.CFrame + Vector3.new(0, 5, 0)
-               end
-           end
-           print("Телепорт выполнен")
-       end
-   end,
-})
-
-VisualTab:CreateSection("ESP Яиц")
-
-VisualTab:CreateToggle({
-   Name = "Подсветка яиц (ESP)",
-   CurrentValue = false,
-   Flag = "EggESP",
-   Callback = function(Value)
-       getgenv().Config.ESPEnabled = Value
-       if Value then
-           for _, v in ipairs(workspace:GetDescendants()) do
-               if v:IsA("Highlight") and v.Name == "EggHighlight" then
-                   v:Destroy()
-               end
-           end
-           for _, v in ipairs(workspace:GetDescendants()) do
-               if v:IsA("Model") and v.Name:lower():find("egg") then
-                   local highlight = Instance.new("Highlight")
-                   highlight.Name = "EggHighlight"
-                   highlight.Adornee = v
-                   highlight.FillColor = Color3.fromRGB(255, 255, 0)
-                   highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
-                   highlight.Parent = v
-               end
-           end
-           print("ESP яиц включен")
-       else
-           for _, v in ipairs(workspace:GetDescendants()) do
-               if v:IsA("Highlight") and v.Name == "EggHighlight" then
-                   v:Destroy()
-               end
-           end
-           print("ESP яиц выключен")
-       end
-   end,
-})
+print("\n=== РАЗВЕДКА ЗАВЕРШЕНА ===")
+print("Скопируй вывод и покажи мне — я помогу написать рабочий скрипт на основе этих данных.")
